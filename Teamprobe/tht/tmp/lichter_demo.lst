@@ -1,0 +1,1146 @@
+   1               		.file	"lichter_demo.c"
+   2               	__SP_H__ = 0x3e
+   3               	__SP_L__ = 0x3d
+   4               	__SREG__ = 0x3f
+   5               	__tmp_reg__ = 0
+   6               	__zero_reg__ = 1
+   8               		.text
+   9               	.Ltext0:
+ 112               	.global	init_hardware
+ 114               	init_hardware:
+   1:lichter_demo.c **** 
+   2:lichter_demo.c **** /******************************************************************************
+   3:lichter_demo.c **** * robosax/lichter_demo.c                                                      *
+   4:lichter_demo.c **** * ======================                                                      *
+   5:lichter_demo.c **** *                                                                             *
+   6:lichter_demo.c **** * Version: ?.?.?                                                             *
+   7:lichter_demo.c **** * Date   : 23.01.18                                                           *
+   8:lichter_demo.c **** * Author : Peter Weissig, Tina Lenk , Frasnz                                   *
+   9:lichter_demo.c **** *                                                                             *
+  10:lichter_demo.c **** ******************************************************************************/
+  11:lichter_demo.c **** 
+  12:lichter_demo.c **** 
+  13:lichter_demo.c **** //**************************<Included files>***********************************
+  14:lichter_demo.c **** #include <avr/io.h>
+  15:lichter_demo.c **** #include <inttypes.h>
+  16:lichter_demo.c **** 
+  17:lichter_demo.c **** #include "lichter_demo.h"
+  18:lichter_demo.c **** 
+  19:lichter_demo.c **** //**************************<Macros>*******************************************
+  20:lichter_demo.c **** #define led1_setRed(x)   ( x ? (PORTB|= _BV(1)) : (PORTB&= ~_BV(1)))
+  21:lichter_demo.c **** #define led1_setGreen(x) ( x ? (PORTB|= _BV(2)) : (PORTB&= ~_BV(2)))
+  22:lichter_demo.c **** #define led1_setBlue(x)  ( x ? (PORTD|= _BV(5)) : (PORTD&= ~_BV(5)))
+  23:lichter_demo.c **** #define led1_setIr(x)    ( x ? (PORTD|= _BV(3)) : (PORTD&= ~_BV(3)))
+  24:lichter_demo.c **** 
+  25:lichter_demo.c **** #define led1_readRed()   ((PORTB & _BV(1)) != 0x00)
+  26:lichter_demo.c **** #define led1_readGreen()   ((PORTB & _BV(2)) != 0x00)
+  27:lichter_demo.c **** #define led1_readBlue()   ((PORTD & _BV(5)) != 0x00)
+  28:lichter_demo.c **** #define led1_readIr()   ((PORTD & _BV(3)) != 0x00)
+  29:lichter_demo.c **** 
+  30:lichter_demo.c **** #define led2_setRed(x)   ( x ? (PORTC|= _BV(0)) : (PORTC&= ~_BV(0)))
+  31:lichter_demo.c **** #define led2_setGreen(x) ( x ? (PORTC|= _BV(1)) : (PORTC&= ~_BV(1)))
+  32:lichter_demo.c **** #define led2_setBlue(x)  ( x ? (PORTC|= _BV(2)) : (PORTC&= ~_BV(2)))
+  33:lichter_demo.c **** #define led2_setIr(x)    ( x ? (PORTB|= _BV(3)) : (PORTB&= ~_BV(3)))
+  34:lichter_demo.c **** 
+  35:lichter_demo.c **** #define led2_readRed()   ((PORTC & _BV(0)) != 0x00)
+  36:lichter_demo.c **** #define led2_readGreen()   ((PORTC & _BV(1)) != 0x00)
+  37:lichter_demo.c **** #define led2_readBlue()   ((PORTC & _BV(2)) != 0x00)
+  38:lichter_demo.c **** #define led2_readIr()   ((PORTB & _BV(3)) != 0x00)
+  39:lichter_demo.c **** 
+  40:lichter_demo.c **** #define button_getBtnmode() ((PIND & _BV(4)) == 0x00)
+  41:lichter_demo.c **** #define button_getBtn1() ((PINB & _BV(0)) == 0x00)
+  42:lichter_demo.c **** #define button_getBtn2() ((PINC & _BV(3)) == 0x00)
+  43:lichter_demo.c **** 
+  44:lichter_demo.c **** //**************************<Definitions>**************************************
+  45:lichter_demo.c **** typedef struct{
+  46:lichter_demo.c ****     _Bool big;
+  47:lichter_demo.c ****     _Bool one;
+  48:lichter_demo.c ****     _Bool two;
+  49:lichter_demo.c ****     _Bool big_flank_up;
+  50:lichter_demo.c ****     _Bool one_flank_up;
+  51:lichter_demo.c ****     _Bool two_flank_up;
+  52:lichter_demo.c ****     _Bool big_flank_down;
+  53:lichter_demo.c ****     _Bool one_flank_down;
+  54:lichter_demo.c ****     _Bool two_flank_down;
+  55:lichter_demo.c **** }ButtonState; ButtonState buttons;
+  56:lichter_demo.c **** 
+  57:lichter_demo.c **** //**************************<Prototypes>***************************************
+  58:lichter_demo.c **** void init_hardware(void);
+  59:lichter_demo.c **** void led_clearAll(void);
+  60:lichter_demo.c **** void get_buttonState(void);
+  61:lichter_demo.c **** int main (void);
+  62:lichter_demo.c **** void modus_1(uint8_t *error_team1, uint8_t *error_team2);
+  63:lichter_demo.c **** void modus_2(void);
+  64:lichter_demo.c **** void modus_3(uint8_t *error_team1, uint8_t *error_team2);
+  65:lichter_demo.c **** void blink_multicolored_alternating(void);
+  66:lichter_demo.c **** void blink_green_alternating(void);
+  67:lichter_demo.c **** void blink_multicolored(void);
+  68:lichter_demo.c **** 
+  69:lichter_demo.c **** //**************************<Methods>******************************************
+  70:lichter_demo.c **** 
+  71:lichter_demo.c **** //**************************[init_hardware]************************************
+  72:lichter_demo.c **** void init_hardware(void) {
+ 116               	.LM0:
+ 117               	.LFBB1:
+ 118               	/* prologue: function */
+ 119               	/* frame size = 0 */
+ 120               	/* stack size = 0 */
+ 121               	.L__stack_usage = 0
+  73:lichter_demo.c **** 
+  74:lichter_demo.c ****     // set leds to output
+  75:lichter_demo.c ****     DDRB = _BV(1) | _BV(2) | _BV(3);
+ 123               	.LM1:
+ 124 0000 8EE0      		ldi r24,lo8(14)
+ 125 0002 84B9      		out 0x4,r24
+  76:lichter_demo.c ****     DDRC = _BV(0) | _BV(1) | _BV(2);
+ 127               	.LM2:
+ 128 0004 87E0      		ldi r24,lo8(7)
+ 129 0006 87B9      		out 0x7,r24
+  77:lichter_demo.c ****     DDRD = _BV(3) | _BV(5);
+ 131               	.LM3:
+ 132 0008 88E2      		ldi r24,lo8(40)
+ 133 000a 8AB9      		out 0xa,r24
+  78:lichter_demo.c **** 
+  79:lichter_demo.c ****     // set buttons to input, set to pull-up
+  80:lichter_demo.c ****     DDRC &= ~_BV(3);
+ 135               	.LM4:
+ 136 000c 3B98      		cbi 0x7,3
+  81:lichter_demo.c ****   //  PORTC |= _BV(3);
+  82:lichter_demo.c ****   //  PORTB |= _BV(0);
+  83:lichter_demo.c **** 
+  84:lichter_demo.c ****     // set big button to input, set to pull-up
+  85:lichter_demo.c ****     DDRD &= ~_BV(4);
+ 138               	.LM5:
+ 139 000e 5498      		cbi 0xa,4
+  86:lichter_demo.c ****   //  PORTD |= _BV(4);
+  87:lichter_demo.c **** 
+  88:lichter_demo.c ****     buttons.big = 0;
+ 141               	.LM6:
+ 142 0010 E0E0      		ldi r30,lo8(buttons)
+ 143 0012 F0E0      		ldi r31,hi8(buttons)
+ 144 0014 1082      		st Z,__zero_reg__
+  89:lichter_demo.c ****     buttons.one = 0;
+ 146               	.LM7:
+ 147 0016 1182      		std Z+1,__zero_reg__
+  90:lichter_demo.c ****     buttons.two = 0;
+ 149               	.LM8:
+ 150 0018 1282      		std Z+2,__zero_reg__
+ 151 001a 0895      		ret
+ 153               	.Lscope1:
+ 155               	.global	led_clearAll
+ 157               	led_clearAll:
+  91:lichter_demo.c **** }
+  92:lichter_demo.c **** 
+  93:lichter_demo.c **** //**************************[led_clearAll]********************************************
+  94:lichter_demo.c **** void led_clearAll(void) {
+ 159               	.LM9:
+ 160               	.LFBB2:
+ 161               	/* prologue: function */
+ 162               	/* frame size = 0 */
+ 163               	/* stack size = 0 */
+ 164               	.L__stack_usage = 0
+  95:lichter_demo.c **** 
+  96:lichter_demo.c ****     // schaltet alle LEDs aus
+  97:lichter_demo.c ****     // LED von beiden Teams starten in jedem Modus im ausgeschalteten Zustand
+  98:lichter_demo.c ****     led1_setRed(0);
+ 166               	.LM10:
+ 167 001c 2998      		cbi 0x5,1
+  99:lichter_demo.c ****     led1_setGreen(0);
+ 169               	.LM11:
+ 170 001e 2A98      		cbi 0x5,2
+ 100:lichter_demo.c ****     led1_setBlue(0);
+ 172               	.LM12:
+ 173 0020 5D98      		cbi 0xb,5
+ 101:lichter_demo.c ****     led1_setIr(0);
+ 175               	.LM13:
+ 176 0022 5B98      		cbi 0xb,3
+ 102:lichter_demo.c **** 
+ 103:lichter_demo.c ****     led2_setRed(0);
+ 178               	.LM14:
+ 179 0024 4098      		cbi 0x8,0
+ 104:lichter_demo.c ****     led2_setGreen(0);
+ 181               	.LM15:
+ 182 0026 4198      		cbi 0x8,1
+ 105:lichter_demo.c ****     led2_setBlue(0);
+ 184               	.LM16:
+ 185 0028 4298      		cbi 0x8,2
+ 106:lichter_demo.c ****     led2_setIr(0);
+ 187               	.LM17:
+ 188 002a 2B98      		cbi 0x5,3
+ 189 002c 0895      		ret
+ 191               	.Lscope2:
+ 193               	.global	get_buttonState
+ 195               	get_buttonState:
+ 107:lichter_demo.c **** 
+ 108:lichter_demo.c **** }
+ 109:lichter_demo.c **** 
+ 110:lichter_demo.c **** //**************************[get_buttonState]**********************************
+ 111:lichter_demo.c **** void get_buttonState(void) {
+ 197               	.LM18:
+ 198               	.LFBB3:
+ 199 002e 1F93      		push r17
+ 200 0030 CF93      		push r28
+ 201 0032 DF93      		push r29
+ 202               	/* prologue: function */
+ 203               	/* frame size = 0 */
+ 204               	/* stack size = 3 */
+ 205               	.L__stack_usage = 3
+ 112:lichter_demo.c ****     _Bool big_old = buttons.big; _Bool one_old = buttons.one; _Bool two_old = buttons.two;
+ 207               	.LM19:
+ 208 0034 1091 0000 		lds r17,buttons
+ 209 0038 D091 0000 		lds r29,buttons+1
+ 210 003c C091 0000 		lds r28,buttons+2
+ 113:lichter_demo.c **** 
+ 114:lichter_demo.c ****     buttons.big = button_getBtnmode();
+ 212               	.LM20:
+ 213 0040 29B1      		in r18,0x9
+ 214 0042 81E0      		ldi r24,lo8(1)
+ 215 0044 2295      		swap r18
+ 216 0046 2170      		andi r18,1
+ 217 0048 2827      		eor r18,r24
+ 218 004a 2093 0000 		sts buttons,r18
+ 115:lichter_demo.c ****     buttons.one = button_getBtn1();
+ 220               	.LM21:
+ 221 004e 93B1      		in r25,0x3
+ 222 0050 9170      		andi r25,lo8(1)
+ 223 0052 9827      		eor r25,r24
+ 224 0054 9093 0000 		sts buttons+1,r25
+ 116:lichter_demo.c ****     buttons.two = button_getBtn2();
+ 226               	.LM22:
+ 227 0058 36B1      		in r19,0x6
+ 228 005a 33FB      		bst r19,3
+ 229 005c 3327      		clr r19
+ 230 005e 30F9      		bld r19,0
+ 231 0060 8327      		eor r24,r19
+ 232 0062 8093 0000 		sts buttons+2,r24
+ 117:lichter_demo.c **** 
+ 118:lichter_demo.c ****     if(buttons.big != big_old || buttons.one != one_old || buttons.two != two_old || buttons.big_fl
+ 234               	.LM23:
+ 235 0066 2113      		cpse r18,r17
+ 236 0068 00C0      		rjmp .L4
+ 238               	.LM24:
+ 239 006a 9D13      		cpse r25,r29
+ 240 006c 00C0      		rjmp .L4
+ 242               	.LM25:
+ 243 006e 8C13      		cpse r24,r28
+ 244 0070 00C0      		rjmp .L4
+ 246               	.LM26:
+ 247 0072 8091 0000 		lds r24,buttons+6
+ 248 0076 8111      		cpse r24,__zero_reg__
+ 249 0078 00C0      		rjmp .L4
+ 251               	.LM27:
+ 252 007a 8091 0000 		lds r24,buttons+3
+ 253 007e 8111      		cpse r24,__zero_reg__
+ 254 0080 00C0      		rjmp .L4
+ 256               	.LM28:
+ 257 0082 8091 0000 		lds r24,buttons+7
+ 258 0086 8111      		cpse r24,__zero_reg__
+ 259 0088 00C0      		rjmp .L4
+ 261               	.LM29:
+ 262 008a 8091 0000 		lds r24,buttons+4
+ 263 008e 8111      		cpse r24,__zero_reg__
+ 264 0090 00C0      		rjmp .L4
+ 266               	.LM30:
+ 267 0092 8091 0000 		lds r24,buttons+8
+ 268 0096 8111      		cpse r24,__zero_reg__
+ 269 0098 00C0      		rjmp .L4
+ 271               	.LM31:
+ 272 009a 8091 0000 		lds r24,buttons+5
+ 273 009e 8823      		tst r24
+ 274 00a0 01F4      		brne .+2
+ 275 00a2 00C0      		rjmp .L3
+ 276               	.L4:
+ 119:lichter_demo.c ****         delay_ms(30);
+ 278               	.LM32:
+ 279 00a4 8EE1      		ldi r24,lo8(30)
+ 280 00a6 90E0      		ldi r25,0
+ 281 00a8 0E94 0000 		call delay_ms
+ 120:lichter_demo.c ****         if(button_getBtnmode() && buttons.big && !big_old)
+ 283               	.LM33:
+ 284 00ac 4C99      		sbic 0x9,4
+ 285 00ae 00C0      		rjmp .L6
+ 287               	.LM34:
+ 288 00b0 8091 0000 		lds r24,buttons
+ 289 00b4 8823      		tst r24
+ 290 00b6 01F0      		breq .L6
+ 292               	.LM35:
+ 293 00b8 1111      		cpse r17,__zero_reg__
+ 294 00ba 00C0      		rjmp .L6
+ 121:lichter_demo.c ****             buttons.big_flank_up = 1;
+ 296               	.LM36:
+ 297 00bc 81E0      		ldi r24,lo8(1)
+ 298 00be 8093 0000 		sts buttons+3,r24
+ 299 00c2 00C0      		rjmp .L7
+ 300               	.L6:
+ 122:lichter_demo.c ****         else buttons.big_flank_up = 0;
+ 302               	.LM37:
+ 303 00c4 1092 0000 		sts buttons+3,__zero_reg__
+ 304               	.L7:
+ 123:lichter_demo.c **** 
+ 124:lichter_demo.c ****         if(!button_getBtnmode() && !buttons.big && big_old)
+ 306               	.LM38:
+ 307 00c8 4C9B      		sbis 0x9,4
+ 308 00ca 00C0      		rjmp .L8
+ 310               	.LM39:
+ 311 00cc 8091 0000 		lds r24,buttons
+ 312 00d0 8111      		cpse r24,__zero_reg__
+ 313 00d2 00C0      		rjmp .L8
+ 315               	.LM40:
+ 316 00d4 1123      		tst r17
+ 317 00d6 01F0      		breq .L8
+ 125:lichter_demo.c ****             buttons.big_flank_down = 1;
+ 319               	.LM41:
+ 320 00d8 81E0      		ldi r24,lo8(1)
+ 321 00da 8093 0000 		sts buttons+6,r24
+ 322 00de 00C0      		rjmp .L9
+ 323               	.L8:
+ 126:lichter_demo.c ****         else buttons.big_flank_down = 0;
+ 325               	.LM42:
+ 326 00e0 1092 0000 		sts buttons+6,__zero_reg__
+ 327               	.L9:
+ 127:lichter_demo.c **** 
+ 128:lichter_demo.c ****         if(button_getBtn1() && buttons.one && !one_old)
+ 329               	.LM43:
+ 330 00e4 1899      		sbic 0x3,0
+ 331 00e6 00C0      		rjmp .L10
+ 333               	.LM44:
+ 334 00e8 8091 0000 		lds r24,buttons+1
+ 335 00ec 8823      		tst r24
+ 336 00ee 01F0      		breq .L10
+ 338               	.LM45:
+ 339 00f0 D111      		cpse r29,__zero_reg__
+ 340 00f2 00C0      		rjmp .L10
+ 129:lichter_demo.c ****             buttons.one_flank_up = 1;
+ 342               	.LM46:
+ 343 00f4 81E0      		ldi r24,lo8(1)
+ 344 00f6 8093 0000 		sts buttons+4,r24
+ 345 00fa 00C0      		rjmp .L11
+ 346               	.L10:
+ 130:lichter_demo.c ****         else buttons.one_flank_up = 0;
+ 348               	.LM47:
+ 349 00fc 1092 0000 		sts buttons+4,__zero_reg__
+ 350               	.L11:
+ 131:lichter_demo.c **** 
+ 132:lichter_demo.c ****         if(!button_getBtn1() && !buttons.one && one_old)
+ 352               	.LM48:
+ 353 0100 189B      		sbis 0x3,0
+ 354 0102 00C0      		rjmp .L12
+ 356               	.LM49:
+ 357 0104 8091 0000 		lds r24,buttons+1
+ 358 0108 8111      		cpse r24,__zero_reg__
+ 359 010a 00C0      		rjmp .L12
+ 361               	.LM50:
+ 362 010c DD23      		tst r29
+ 363 010e 01F0      		breq .L12
+ 133:lichter_demo.c ****             buttons.one_flank_down= 1;
+ 365               	.LM51:
+ 366 0110 81E0      		ldi r24,lo8(1)
+ 367 0112 8093 0000 		sts buttons+7,r24
+ 368 0116 00C0      		rjmp .L13
+ 369               	.L12:
+ 134:lichter_demo.c ****         else buttons.one_flank_down = 0;
+ 371               	.LM52:
+ 372 0118 1092 0000 		sts buttons+7,__zero_reg__
+ 373               	.L13:
+ 135:lichter_demo.c **** 
+ 136:lichter_demo.c ****         if(button_getBtn2() && buttons.two && !two_old)
+ 375               	.LM53:
+ 376 011c 3399      		sbic 0x6,3
+ 377 011e 00C0      		rjmp .L14
+ 379               	.LM54:
+ 380 0120 8091 0000 		lds r24,buttons+2
+ 381 0124 8823      		tst r24
+ 382 0126 01F0      		breq .L14
+ 384               	.LM55:
+ 385 0128 C111      		cpse r28,__zero_reg__
+ 386 012a 00C0      		rjmp .L14
+ 137:lichter_demo.c ****             buttons.two_flank_up = 1;
+ 388               	.LM56:
+ 389 012c 81E0      		ldi r24,lo8(1)
+ 390 012e 8093 0000 		sts buttons+5,r24
+ 391 0132 00C0      		rjmp .L15
+ 392               	.L14:
+ 138:lichter_demo.c ****         else buttons.two_flank_up = 0;
+ 394               	.LM57:
+ 395 0134 1092 0000 		sts buttons+5,__zero_reg__
+ 396               	.L15:
+ 139:lichter_demo.c **** 
+ 140:lichter_demo.c ****         if(!button_getBtn2() && !buttons.two && two_old)
+ 398               	.LM58:
+ 399 0138 339B      		sbis 0x6,3
+ 400 013a 00C0      		rjmp .L16
+ 402               	.LM59:
+ 403 013c 8091 0000 		lds r24,buttons+2
+ 404 0140 8111      		cpse r24,__zero_reg__
+ 405 0142 00C0      		rjmp .L16
+ 407               	.LM60:
+ 408 0144 CC23      		tst r28
+ 409 0146 01F0      		breq .L16
+ 141:lichter_demo.c ****             buttons.two_flank_down= 1;
+ 411               	.LM61:
+ 412 0148 81E0      		ldi r24,lo8(1)
+ 413 014a 8093 0000 		sts buttons+8,r24
+ 414 014e 00C0      		rjmp .L3
+ 415               	.L16:
+ 142:lichter_demo.c ****         else buttons.two_flank_down = 0;
+ 417               	.LM62:
+ 418 0150 1092 0000 		sts buttons+8,__zero_reg__
+ 419               	.L3:
+ 420               	/* epilogue start */
+ 143:lichter_demo.c ****     }
+ 144:lichter_demo.c **** 
+ 145:lichter_demo.c **** }
+ 422               	.LM63:
+ 423 0154 DF91      		pop r29
+ 424 0156 CF91      		pop r28
+ 425 0158 1F91      		pop r17
+ 426 015a 0895      		ret
+ 433               	.Lscope3:
+ 437               	.global	modus_1
+ 439               	modus_1:
+ 146:lichter_demo.c **** 
+ 147:lichter_demo.c **** //**************************[main]*********************************************
+ 148:lichter_demo.c **** int main (void) {
+ 149:lichter_demo.c **** 
+ 150:lichter_demo.c ****     // initialize hardware
+ 151:lichter_demo.c ****     init_hardware();
+ 152:lichter_demo.c **** 
+ 153:lichter_demo.c ****     //ToDo: modus aus und in EEPROM schreiben
+ 154:lichter_demo.c ****      uint8_t modus = 1;
+ 155:lichter_demo.c ****      blink_multicolored_alternating();
+ 156:lichter_demo.c ****      led_clearAll();
+ 157:lichter_demo.c ****      uint8_t error_count_team1 = 0;
+ 158:lichter_demo.c ****      uint8_t error_count_team2 = 0;
+ 159:lichter_demo.c ****      uint8_t *error_team1 = &error_count_team1;
+ 160:lichter_demo.c ****      uint8_t *error_team2 = &error_count_team2;
+ 161:lichter_demo.c **** 
+ 162:lichter_demo.c ****     //Idee: rote LED blinkt je nach aktivem Modus zu Beginn 1, 2 oder 3 mal
+ 163:lichter_demo.c **** 
+ 164:lichter_demo.c ****     //blaue LED leuchtet für Team 1
+ 165:lichter_demo.c ****     //grüne LED leuchtet für Team 2
+ 166:lichter_demo.c **** 
+ 167:lichter_demo.c ****     while (1)
+ 168:lichter_demo.c ****     {
+ 169:lichter_demo.c ****         //liest aktuelle Zustände der Knöpfe
+ 170:lichter_demo.c ****         get_buttonState();
+ 171:lichter_demo.c **** 
+ 172:lichter_demo.c ****         //großer Knopf für Moduswechsel
+ 173:lichter_demo.c ****         if (buttons.big_flank_up)
+ 174:lichter_demo.c ****             modus++;
+ 175:lichter_demo.c ****         if (modus >3)
+ 176:lichter_demo.c ****             modus=1;
+ 177:lichter_demo.c **** 
+ 178:lichter_demo.c ****         // wenn der Modus geswitched wird, starten alle Lampen ausgeschaltet
+ 179:lichter_demo.c ****         // und beide Fehlerzähler werden zurückgesetzt
+ 180:lichter_demo.c ****         if (buttons.big_flank_up) {
+ 181:lichter_demo.c ****             led_clearAll();
+ 182:lichter_demo.c ****             error_count_team1 = 0;
+ 183:lichter_demo.c ****             error_count_team2 = 0;
+ 184:lichter_demo.c **** 
+ 185:lichter_demo.c ****             switch (modus) {
+ 186:lichter_demo.c ****                 case  1: blink_multicolored_alternating();
+ 187:lichter_demo.c ****                             break;
+ 188:lichter_demo.c ****                 case  2: blink_green_alternating();
+ 189:lichter_demo.c ****                             break;
+ 190:lichter_demo.c ****                 case  3: blink_multicolored();
+ 191:lichter_demo.c ****                             break;
+ 192:lichter_demo.c ****                 default: led1_setGreen(1); led1_setBlue(1); led1_setRed(1);
+ 193:lichter_demo.c ****                             break;
+ 194:lichter_demo.c ****             }
+ 195:lichter_demo.c ****             led_clearAll();
+ 196:lichter_demo.c **** 
+ 197:lichter_demo.c ****         }
+ 198:lichter_demo.c **** 
+ 199:lichter_demo.c ****             switch (modus) {
+ 200:lichter_demo.c ****                 case  1: modus_1(error_team1, error_team2);
+ 201:lichter_demo.c ****                             break;
+ 202:lichter_demo.c ****                 case  2: modus_2();
+ 203:lichter_demo.c ****                             break;
+ 204:lichter_demo.c ****                 case  3: modus_3(error_team1, error_team2);
+ 205:lichter_demo.c ****                             break;
+ 206:lichter_demo.c ****                 default: led1_setGreen(1); led1_setBlue(1); led1_setRed(1);
+ 207:lichter_demo.c ****                             break;
+ 208:lichter_demo.c ****             }
+ 209:lichter_demo.c ****             // vielleicht unnötiges Delay, kann rausgenommen werden
+ 210:lichter_demo.c ****            // delay_ms(10);
+ 211:lichter_demo.c ****     }
+ 212:lichter_demo.c **** 
+ 213:lichter_demo.c ****     return (0);
+ 214:lichter_demo.c **** 
+ 215:lichter_demo.c **** }
+ 216:lichter_demo.c **** 
+ 217:lichter_demo.c **** //**************************[modus_1]*********************************************
+ 218:lichter_demo.c **** void modus_1(uint8_t *error_team1, uint8_t *error_team2) {
+ 441               	.LM64:
+ 442               	.LFBB4:
+ 443               	/* prologue: function */
+ 444               	/* frame size = 0 */
+ 445               	/* stack size = 0 */
+ 446               	.L__stack_usage = 0
+ 447 015c DC01      		movw r26,r24
+ 448 015e FB01      		movw r30,r22
+ 219:lichter_demo.c **** 
+ 220:lichter_demo.c **** //***Team1*************************
+ 221:lichter_demo.c ****     if (buttons.one_flank_up) {
+ 450               	.LM65:
+ 451 0160 8091 0000 		lds r24,buttons+4
+ 452 0164 8823      		tst r24
+ 453 0166 01F0      		breq .L50
+ 222:lichter_demo.c ****         //wenn Knopf gedrückt wird, obwohl Teamlicht (blau) schon an ist -> Fehler
+ 223:lichter_demo.c ****         if (led1_readBlue()) {
+ 455               	.LM66:
+ 456 0168 5D9B      		sbis 0xb,5
+ 457 016a 00C0      		rjmp .L51
+ 224:lichter_demo.c ****             *error_team1+=1;
+ 459               	.LM67:
+ 460 016c 9C91      		ld r25,X
+ 461 016e 9F5F      		subi r25,lo8(-(1))
+ 462 0170 9C93      		st X,r25
+ 225:lichter_demo.c ****             if (*error_team1>=3) {
+ 464               	.LM68:
+ 465 0172 9330      		cpi r25,lo8(3)
+ 466 0174 00F0      		brlo .L50
+ 226:lichter_demo.c ****             //bei 3 Fehlern: eigenes Licht geht aus, das vom Gegner (grün) an
+ 227:lichter_demo.c ****                 led1_setBlue(0);
+ 468               	.LM69:
+ 469 0176 5D98      		cbi 0xb,5
+ 228:lichter_demo.c ****                 led2_setGreen(1);
+ 471               	.LM70:
+ 472 0178 419A      		sbi 0x8,1
+ 229:lichter_demo.c ****                 *error_team1=0;
+ 474               	.LM71:
+ 475 017a 1C92      		st X,__zero_reg__
+ 476 017c 00C0      		rjmp .L50
+ 477               	.L51:
+ 230:lichter_demo.c ****             }
+ 231:lichter_demo.c ****         }
+ 232:lichter_demo.c ****         //Teamlicht anschalten, wenn vorher aus
+ 233:lichter_demo.c ****         else {
+ 234:lichter_demo.c ****             led1_setBlue(1);
+ 479               	.LM72:
+ 480 017e 5D9A      		sbi 0xb,5
+ 235:lichter_demo.c ****             led2_setGreen(0);
+ 482               	.LM73:
+ 483 0180 4198      		cbi 0x8,1
+ 484               	.L50:
+ 236:lichter_demo.c ****         }
+ 237:lichter_demo.c ****     }
+ 238:lichter_demo.c **** 
+ 239:lichter_demo.c **** //***Team2*************************
+ 240:lichter_demo.c ****     if (buttons.two_flank_up) {
+ 486               	.LM74:
+ 487 0182 8091 0000 		lds r24,buttons+5
+ 488 0186 8823      		tst r24
+ 489 0188 01F0      		breq .L48
+ 490               	.LBB4:
+ 491               	.LBB5:
+ 241:lichter_demo.c ****         //wenn Knopf gedrückt wird, obwohl Teamlicht (grün) schon an ist -> Fehler
+ 242:lichter_demo.c ****         if (led2_readGreen()) {
+ 493               	.LM75:
+ 494 018a 419B      		sbis 0x8,1
+ 495 018c 00C0      		rjmp .L55
+ 243:lichter_demo.c ****             *error_team2+=1;
+ 497               	.LM76:
+ 498 018e 8081      		ld r24,Z
+ 499 0190 8F5F      		subi r24,lo8(-(1))
+ 500 0192 8083      		st Z,r24
+ 244:lichter_demo.c ****             if (*error_team2>=3) {
+ 502               	.LM77:
+ 503 0194 8330      		cpi r24,lo8(3)
+ 504 0196 00F0      		brlo .L48
+ 245:lichter_demo.c ****             //bei 3 Fehlern: eigenes Licht geht aus, das vom Gegner (blau) an
+ 246:lichter_demo.c ****                 led1_setBlue(1);
+ 506               	.LM78:
+ 507 0198 5D9A      		sbi 0xb,5
+ 247:lichter_demo.c ****                 led2_setGreen(0);
+ 509               	.LM79:
+ 510 019a 4198      		cbi 0x8,1
+ 248:lichter_demo.c ****                 *error_team2=0;
+ 512               	.LM80:
+ 513 019c 1082      		st Z,__zero_reg__
+ 514 019e 0895      		ret
+ 515               	.L55:
+ 249:lichter_demo.c ****             }
+ 250:lichter_demo.c ****         }
+ 251:lichter_demo.c ****         //Teamlicht anschalten, wenn vorher aus
+ 252:lichter_demo.c ****         else {
+ 253:lichter_demo.c ****             led1_setBlue(0);
+ 517               	.LM81:
+ 518 01a0 5D98      		cbi 0xb,5
+ 254:lichter_demo.c ****             led2_setGreen(1);
+ 520               	.LM82:
+ 521 01a2 419A      		sbi 0x8,1
+ 522               	.L48:
+ 523 01a4 0895      		ret
+ 524               	.LBE5:
+ 525               	.LBE4:
+ 527               	.Lscope4:
+ 529               	.global	modus_2
+ 531               	modus_2:
+ 255:lichter_demo.c ****         }
+ 256:lichter_demo.c ****     }
+ 257:lichter_demo.c **** 
+ 258:lichter_demo.c **** }
+ 259:lichter_demo.c **** 
+ 260:lichter_demo.c **** //**************************[modus_2]*********************************************
+ 261:lichter_demo.c **** void modus_2() {
+ 533               	.LM83:
+ 534               	.LFBB5:
+ 535               	/* prologue: function */
+ 536               	/* frame size = 0 */
+ 537               	/* stack size = 0 */
+ 538               	.L__stack_usage = 0
+ 262:lichter_demo.c ****     //mit Zuständen arbeiten
+ 263:lichter_demo.c ****     if (buttons.one_flank_up) {
+ 540               	.LM84:
+ 541 01a6 8091 0000 		lds r24,buttons+4
+ 542 01aa 8823      		tst r24
+ 543 01ac 01F0      		breq .L58
+ 264:lichter_demo.c ****         led1_setGreen(1);
+ 545               	.LM85:
+ 546 01ae 2A9A      		sbi 0x5,2
+ 265:lichter_demo.c ****         led2_setGreen(0);
+ 548               	.LM86:
+ 549 01b0 4198      		cbi 0x8,1
+ 550               	.L58:
+ 266:lichter_demo.c ****     }
+ 267:lichter_demo.c ****     if (buttons.two_flank_up) {
+ 552               	.LM87:
+ 553 01b2 8091 0000 		lds r24,buttons+5
+ 554 01b6 8823      		tst r24
+ 555 01b8 01F0      		breq .L57
+ 556               	.LBB8:
+ 268:lichter_demo.c ****         led1_setGreen(0);
+ 558               	.LM88:
+ 559 01ba 2A98      		cbi 0x5,2
+ 269:lichter_demo.c ****         led2_setGreen(1);
+ 561               	.LM89:
+ 562 01bc 419A      		sbi 0x8,1
+ 563               	.L57:
+ 564 01be 0895      		ret
+ 565               	.LBE8:
+ 567               	.Lscope5:
+ 571               	.global	modus_3
+ 573               	modus_3:
+ 270:lichter_demo.c ****     }
+ 271:lichter_demo.c **** }
+ 272:lichter_demo.c **** 
+ 273:lichter_demo.c **** //**************************[modus_3]*********************************************
+ 274:lichter_demo.c **** //unabhängige Lichter mit Fehlerzähler
+ 275:lichter_demo.c **** void modus_3(uint8_t *error_team1, uint8_t *error_team2) {
+ 575               	.LM90:
+ 576               	.LFBB6:
+ 577               	/* prologue: function */
+ 578               	/* frame size = 0 */
+ 579               	/* stack size = 0 */
+ 580               	.L__stack_usage = 0
+ 581 01c0 DC01      		movw r26,r24
+ 582 01c2 FB01      		movw r30,r22
+ 276:lichter_demo.c **** 
+ 277:lichter_demo.c **** //***Team1*************************
+ 278:lichter_demo.c ****     if (buttons.one_flank_up) {
+ 584               	.LM91:
+ 585 01c4 8091 0000 		lds r24,buttons+4
+ 586 01c8 8823      		tst r24
+ 587 01ca 01F0      		breq .L68
+ 279:lichter_demo.c ****         //wenn Knopf gedrückt wird, obwohl Teamlicht (blau) schon an ist -> Fehler
+ 280:lichter_demo.c ****         if (led1_readBlue()) {
+ 589               	.LM92:
+ 590 01cc 5D9B      		sbis 0xb,5
+ 591 01ce 00C0      		rjmp .L69
+ 281:lichter_demo.c ****             *error_team1+=1;
+ 593               	.LM93:
+ 594 01d0 9C91      		ld r25,X
+ 595 01d2 9F5F      		subi r25,lo8(-(1))
+ 596 01d4 9C93      		st X,r25
+ 282:lichter_demo.c ****             if (*error_team1>=3) {
+ 598               	.LM94:
+ 599 01d6 9330      		cpi r25,lo8(3)
+ 600 01d8 00F0      		brlo .L68
+ 283:lichter_demo.c ****             //bei 3 Fehlern: eigenes Licht geht aus, das vom Gegner (grün) an
+ 284:lichter_demo.c ****                 led1_setBlue(0);
+ 602               	.LM95:
+ 603 01da 5D98      		cbi 0xb,5
+ 285:lichter_demo.c ****                 *error_team1=0;
+ 605               	.LM96:
+ 606 01dc 1C92      		st X,__zero_reg__
+ 607 01de 00C0      		rjmp .L68
+ 608               	.L69:
+ 286:lichter_demo.c ****             }
+ 287:lichter_demo.c ****         }
+ 288:lichter_demo.c ****         //Teamlicht anschalten, wenn vorher aus
+ 289:lichter_demo.c ****         else {
+ 290:lichter_demo.c ****             led1_setBlue(1);
+ 610               	.LM97:
+ 611 01e0 5D9A      		sbi 0xb,5
+ 612               	.L68:
+ 291:lichter_demo.c ****         }
+ 292:lichter_demo.c ****     }
+ 293:lichter_demo.c **** 
+ 294:lichter_demo.c **** //***Team2*************************
+ 295:lichter_demo.c ****     if (buttons.two_flank_up) {
+ 614               	.LM98:
+ 615 01e2 8091 0000 		lds r24,buttons+5
+ 616 01e6 8823      		tst r24
+ 617 01e8 01F0      		breq .L66
+ 296:lichter_demo.c ****         //wenn Knopf gedrückt wird, obwohl Teamlicht (grün) schon an ist -> Fehler
+ 297:lichter_demo.c ****         if (led2_readBlue()) {
+ 619               	.LM99:
+ 620 01ea 429B      		sbis 0x8,2
+ 621 01ec 00C0      		rjmp .L73
+ 298:lichter_demo.c ****             *error_team2+=1;
+ 623               	.LM100:
+ 624 01ee 8081      		ld r24,Z
+ 625 01f0 8F5F      		subi r24,lo8(-(1))
+ 626 01f2 8083      		st Z,r24
+ 299:lichter_demo.c ****             if (*error_team2>=3) {
+ 628               	.LM101:
+ 629 01f4 8330      		cpi r24,lo8(3)
+ 630 01f6 00F0      		brlo .L66
+ 631               	.LBB11:
+ 632               	.LBB12:
+ 300:lichter_demo.c ****             //bei 3 Fehlern: eigenes Licht geht aus, das vom Gegner (blau) an
+ 301:lichter_demo.c ****                 led2_setBlue(0);
+ 634               	.LM102:
+ 635 01f8 4298      		cbi 0x8,2
+ 302:lichter_demo.c ****                 *error_team2=0;
+ 637               	.LM103:
+ 638 01fa 1082      		st Z,__zero_reg__
+ 639 01fc 0895      		ret
+ 640               	.L73:
+ 641               	.LBE12:
+ 642               	.LBE11:
+ 303:lichter_demo.c ****             }
+ 304:lichter_demo.c ****         }
+ 305:lichter_demo.c ****         //Teamlicht anschalten, wenn vorher aus
+ 306:lichter_demo.c ****         else {
+ 307:lichter_demo.c ****             led2_setBlue(1);
+ 644               	.LM104:
+ 645 01fe 429A      		sbi 0x8,2
+ 646               	.L66:
+ 647 0200 0895      		ret
+ 649               	.Lscope6:
+ 651               	.global	blink_multicolored_alternating
+ 653               	blink_multicolored_alternating:
+ 308:lichter_demo.c ****         }
+ 309:lichter_demo.c ****     }
+ 310:lichter_demo.c **** }
+ 311:lichter_demo.c **** 
+ 312:lichter_demo.c **** void blink_multicolored_alternating() {
+ 655               	.LM105:
+ 656               	.LFBB7:
+ 657               	/* prologue: function */
+ 658               	/* frame size = 0 */
+ 659               	/* stack size = 0 */
+ 660               	.L__stack_usage = 0
+ 313:lichter_demo.c **** 
+ 314:lichter_demo.c **** 
+ 315:lichter_demo.c ****     led1_setGreen(1);    led1_setRed(1);
+ 662               	.LM106:
+ 663 0202 2A9A      		sbi 0x5,2
+ 664 0204 299A      		sbi 0x5,1
+ 316:lichter_demo.c ****     delay_ms(200);
+ 666               	.LM107:
+ 667 0206 88EC      		ldi r24,lo8(-56)
+ 668 0208 90E0      		ldi r25,0
+ 669 020a 0E94 0000 		call delay_ms
+ 317:lichter_demo.c ****     led_clearAll();
+ 671               	.LM108:
+ 672 020e 0E94 0000 		call led_clearAll
+ 318:lichter_demo.c ****     led2_setGreen(1);    led2_setRed(1);
+ 674               	.LM109:
+ 675 0212 419A      		sbi 0x8,1
+ 676 0214 409A      		sbi 0x8,0
+ 319:lichter_demo.c ****     delay_ms(200);
+ 678               	.LM110:
+ 679 0216 88EC      		ldi r24,lo8(-56)
+ 680 0218 90E0      		ldi r25,0
+ 681 021a 0E94 0000 		call delay_ms
+ 320:lichter_demo.c ****     led_clearAll();
+ 683               	.LM111:
+ 684 021e 0E94 0000 		call led_clearAll
+ 321:lichter_demo.c ****     led1_setGreen(1);    led1_setRed(1);
+ 686               	.LM112:
+ 687 0222 2A9A      		sbi 0x5,2
+ 688 0224 299A      		sbi 0x5,1
+ 322:lichter_demo.c ****     delay_ms(200);
+ 690               	.LM113:
+ 691 0226 88EC      		ldi r24,lo8(-56)
+ 692 0228 90E0      		ldi r25,0
+ 693 022a 0E94 0000 		call delay_ms
+ 323:lichter_demo.c ****     led_clearAll();
+ 695               	.LM114:
+ 696 022e 0E94 0000 		call led_clearAll
+ 324:lichter_demo.c ****     led2_setGreen(1);    led2_setRed(1);
+ 698               	.LM115:
+ 699 0232 419A      		sbi 0x8,1
+ 700 0234 409A      		sbi 0x8,0
+ 325:lichter_demo.c ****     delay_ms(200);
+ 702               	.LM116:
+ 703 0236 88EC      		ldi r24,lo8(-56)
+ 704 0238 90E0      		ldi r25,0
+ 705 023a 0E94 0000 		call delay_ms
+ 326:lichter_demo.c ****     led_clearAll();
+ 707               	.LM117:
+ 708 023e 0E94 0000 		call led_clearAll
+ 327:lichter_demo.c ****     led1_setGreen(1);    led1_setRed(1);
+ 710               	.LM118:
+ 711 0242 2A9A      		sbi 0x5,2
+ 712 0244 299A      		sbi 0x5,1
+ 328:lichter_demo.c ****     delay_ms(200);
+ 714               	.LM119:
+ 715 0246 88EC      		ldi r24,lo8(-56)
+ 716 0248 90E0      		ldi r25,0
+ 717 024a 0E94 0000 		call delay_ms
+ 329:lichter_demo.c ****     led_clearAll();
+ 719               	.LM120:
+ 720 024e 0E94 0000 		call led_clearAll
+ 330:lichter_demo.c ****     led2_setGreen(1);    led2_setRed(1);
+ 722               	.LM121:
+ 723 0252 419A      		sbi 0x8,1
+ 724 0254 409A      		sbi 0x8,0
+ 331:lichter_demo.c ****     delay_ms(200);
+ 726               	.LM122:
+ 727 0256 88EC      		ldi r24,lo8(-56)
+ 728 0258 90E0      		ldi r25,0
+ 729 025a 0E94 0000 		call delay_ms
+ 332:lichter_demo.c ****     led_clearAll();
+ 731               	.LM123:
+ 732 025e 0C94 0000 		jmp led_clearAll
+ 734               	.Lscope7:
+ 736               	.global	blink_green_alternating
+ 738               	blink_green_alternating:
+ 333:lichter_demo.c **** 
+ 334:lichter_demo.c **** 
+ 335:lichter_demo.c **** }
+ 336:lichter_demo.c **** 
+ 337:lichter_demo.c **** void blink_green_alternating(){
+ 740               	.LM124:
+ 741               	.LFBB8:
+ 742               	/* prologue: function */
+ 743               	/* frame size = 0 */
+ 744               	/* stack size = 0 */
+ 745               	.L__stack_usage = 0
+ 338:lichter_demo.c ****     led1_setGreen(1);
+ 747               	.LM125:
+ 748 0262 2A9A      		sbi 0x5,2
+ 339:lichter_demo.c ****     delay_ms(200);
+ 750               	.LM126:
+ 751 0264 88EC      		ldi r24,lo8(-56)
+ 752 0266 90E0      		ldi r25,0
+ 753 0268 0E94 0000 		call delay_ms
+ 340:lichter_demo.c ****     led_clearAll();
+ 755               	.LM127:
+ 756 026c 0E94 0000 		call led_clearAll
+ 341:lichter_demo.c ****     led2_setGreen(1);
+ 758               	.LM128:
+ 759 0270 419A      		sbi 0x8,1
+ 342:lichter_demo.c ****     delay_ms(200);
+ 761               	.LM129:
+ 762 0272 88EC      		ldi r24,lo8(-56)
+ 763 0274 90E0      		ldi r25,0
+ 764 0276 0E94 0000 		call delay_ms
+ 343:lichter_demo.c ****     led_clearAll();
+ 766               	.LM130:
+ 767 027a 0E94 0000 		call led_clearAll
+ 344:lichter_demo.c **** 
+ 345:lichter_demo.c ****     led1_setGreen(1);
+ 769               	.LM131:
+ 770 027e 2A9A      		sbi 0x5,2
+ 346:lichter_demo.c ****     delay_ms(200);
+ 772               	.LM132:
+ 773 0280 88EC      		ldi r24,lo8(-56)
+ 774 0282 90E0      		ldi r25,0
+ 775 0284 0E94 0000 		call delay_ms
+ 347:lichter_demo.c ****     led_clearAll();
+ 777               	.LM133:
+ 778 0288 0E94 0000 		call led_clearAll
+ 348:lichter_demo.c ****     led2_setGreen(1);
+ 780               	.LM134:
+ 781 028c 419A      		sbi 0x8,1
+ 349:lichter_demo.c ****     delay_ms(200);
+ 783               	.LM135:
+ 784 028e 88EC      		ldi r24,lo8(-56)
+ 785 0290 90E0      		ldi r25,0
+ 786 0292 0E94 0000 		call delay_ms
+ 350:lichter_demo.c ****     led_clearAll();
+ 788               	.LM136:
+ 789 0296 0E94 0000 		call led_clearAll
+ 351:lichter_demo.c **** 
+ 352:lichter_demo.c ****     led1_setGreen(1);
+ 791               	.LM137:
+ 792 029a 2A9A      		sbi 0x5,2
+ 353:lichter_demo.c ****     delay_ms(200);
+ 794               	.LM138:
+ 795 029c 88EC      		ldi r24,lo8(-56)
+ 796 029e 90E0      		ldi r25,0
+ 797 02a0 0E94 0000 		call delay_ms
+ 354:lichter_demo.c ****     led_clearAll();
+ 799               	.LM139:
+ 800 02a4 0E94 0000 		call led_clearAll
+ 355:lichter_demo.c ****     led2_setGreen(1);
+ 802               	.LM140:
+ 803 02a8 419A      		sbi 0x8,1
+ 356:lichter_demo.c ****     delay_ms(200);
+ 805               	.LM141:
+ 806 02aa 88EC      		ldi r24,lo8(-56)
+ 807 02ac 90E0      		ldi r25,0
+ 808 02ae 0C94 0000 		jmp delay_ms
+ 810               	.Lscope8:
+ 812               	.global	blink_multicolored
+ 814               	blink_multicolored:
+ 357:lichter_demo.c **** 
+ 358:lichter_demo.c **** }
+ 359:lichter_demo.c **** 
+ 360:lichter_demo.c **** void blink_multicolored() {
+ 816               	.LM142:
+ 817               	.LFBB9:
+ 818               	/* prologue: function */
+ 819               	/* frame size = 0 */
+ 820               	/* stack size = 0 */
+ 821               	.L__stack_usage = 0
+ 361:lichter_demo.c ****     led1_setBlue(1);
+ 823               	.LM143:
+ 824 02b2 5D9A      		sbi 0xb,5
+ 362:lichter_demo.c ****     led2_setBlue(1);
+ 826               	.LM144:
+ 827 02b4 429A      		sbi 0x8,2
+ 363:lichter_demo.c ****     delay_ms(200);
+ 829               	.LM145:
+ 830 02b6 88EC      		ldi r24,lo8(-56)
+ 831 02b8 90E0      		ldi r25,0
+ 832 02ba 0E94 0000 		call delay_ms
+ 364:lichter_demo.c **** 
+ 365:lichter_demo.c ****     led_clearAll();
+ 834               	.LM146:
+ 835 02be 0E94 0000 		call led_clearAll
+ 366:lichter_demo.c ****     delay_ms(200);
+ 837               	.LM147:
+ 838 02c2 88EC      		ldi r24,lo8(-56)
+ 839 02c4 90E0      		ldi r25,0
+ 840 02c6 0E94 0000 		call delay_ms
+ 367:lichter_demo.c **** 
+ 368:lichter_demo.c ****     led1_setBlue(1);
+ 842               	.LM148:
+ 843 02ca 5D9A      		sbi 0xb,5
+ 369:lichter_demo.c ****     led2_setBlue(1);
+ 845               	.LM149:
+ 846 02cc 429A      		sbi 0x8,2
+ 370:lichter_demo.c ****     delay_ms(200);
+ 848               	.LM150:
+ 849 02ce 88EC      		ldi r24,lo8(-56)
+ 850 02d0 90E0      		ldi r25,0
+ 851 02d2 0E94 0000 		call delay_ms
+ 371:lichter_demo.c **** 
+ 372:lichter_demo.c ****     led_clearAll();
+ 853               	.LM151:
+ 854 02d6 0E94 0000 		call led_clearAll
+ 373:lichter_demo.c ****     delay_ms(200);
+ 856               	.LM152:
+ 857 02da 88EC      		ldi r24,lo8(-56)
+ 858 02dc 90E0      		ldi r25,0
+ 859 02de 0E94 0000 		call delay_ms
+ 374:lichter_demo.c **** 
+ 375:lichter_demo.c ****     led1_setBlue(1);
+ 861               	.LM153:
+ 862 02e2 5D9A      		sbi 0xb,5
+ 376:lichter_demo.c ****     led2_setBlue(1);
+ 864               	.LM154:
+ 865 02e4 429A      		sbi 0x8,2
+ 377:lichter_demo.c ****     delay_ms(200);
+ 867               	.LM155:
+ 868 02e6 88EC      		ldi r24,lo8(-56)
+ 869 02e8 90E0      		ldi r25,0
+ 870 02ea 0C94 0000 		jmp delay_ms
+ 872               	.Lscope9:
+ 873               		.section	.text.startup,"ax",@progbits
+ 875               	.global	main
+ 877               	main:
+ 148:lichter_demo.c **** 
+ 879               	.LM156:
+ 880               	.LFBB10:
+ 881 0000 CF93      		push r28
+ 882 0002 DF93      		push r29
+ 883 0004 00D0      		rcall .
+ 884 0006 CDB7      		in r28,__SP_L__
+ 885 0008 DEB7      		in r29,__SP_H__
+ 886               	/* prologue: function */
+ 887               	/* frame size = 2 */
+ 888               	/* stack size = 4 */
+ 889               	.L__stack_usage = 4
+ 151:lichter_demo.c **** 
+ 891               	.LM157:
+ 892 000a 0E94 0000 		call init_hardware
+ 155:lichter_demo.c ****      led_clearAll();
+ 894               	.LM158:
+ 895 000e 0E94 0000 		call blink_multicolored_alternating
+ 156:lichter_demo.c ****      uint8_t error_count_team1 = 0;
+ 897               	.LM159:
+ 898 0012 0E94 0000 		call led_clearAll
+ 157:lichter_demo.c ****      uint8_t error_count_team2 = 0;
+ 900               	.LM160:
+ 901 0016 1A82      		std Y+2,__zero_reg__
+ 158:lichter_demo.c ****      uint8_t *error_team1 = &error_count_team1;
+ 903               	.LM161:
+ 904 0018 1982      		std Y+1,__zero_reg__
+ 905               	.L101:
+ 154:lichter_demo.c ****      blink_multicolored_alternating();
+ 907               	.LM162:
+ 908 001a 11E0      		ldi r17,lo8(1)
+ 909               	.L79:
+ 170:lichter_demo.c **** 
+ 911               	.LM163:
+ 912 001c 0E94 0000 		call get_buttonState
+ 173:lichter_demo.c ****             modus++;
+ 914               	.LM164:
+ 915 0020 8091 0000 		lds r24,buttons+3
+ 916 0024 8823      		tst r24
+ 917 0026 01F0      		breq .L80
+ 174:lichter_demo.c ****         if (modus >3)
+ 919               	.LM165:
+ 920 0028 1F5F      		subi r17,lo8(-(1))
+ 175:lichter_demo.c ****             modus=1;
+ 922               	.LM166:
+ 923 002a 1430      		cpi r17,lo8(4)
+ 924 002c 00F4      		brsh .L81
+ 181:lichter_demo.c ****             error_count_team1 = 0;
+ 926               	.LM167:
+ 927 002e 0E94 0000 		call led_clearAll
+ 182:lichter_demo.c ****             error_count_team2 = 0;
+ 929               	.LM168:
+ 930 0032 1A82      		std Y+2,__zero_reg__
+ 183:lichter_demo.c **** 
+ 932               	.LM169:
+ 933 0034 1982      		std Y+1,__zero_reg__
+ 185:lichter_demo.c ****                 case  1: blink_multicolored_alternating();
+ 935               	.LM170:
+ 936 0036 1230      		cpi r17,lo8(2)
+ 937 0038 01F0      		breq .L83
+ 938 003a 1330      		cpi r17,lo8(3)
+ 939 003c 01F0      		breq .L84
+ 940 003e 1130      		cpi r17,lo8(1)
+ 941 0040 01F4      		brne .L99
+ 942               	.L85:
+ 186:lichter_demo.c ****                             break;
+ 944               	.LM171:
+ 945 0042 0E94 0000 		call blink_multicolored_alternating
+ 187:lichter_demo.c ****                 case  2: blink_green_alternating();
+ 947               	.LM172:
+ 948 0046 11E0      		ldi r17,lo8(1)
+ 949 0048 00C0      		rjmp .L86
+ 950               	.L83:
+ 188:lichter_demo.c ****                             break;
+ 952               	.LM173:
+ 953 004a 0E94 0000 		call blink_green_alternating
+ 189:lichter_demo.c ****                 case  3: blink_multicolored();
+ 955               	.LM174:
+ 956 004e 00C0      		rjmp .L86
+ 957               	.L84:
+ 190:lichter_demo.c ****                             break;
+ 959               	.LM175:
+ 960 0050 0E94 0000 		call blink_multicolored
+ 191:lichter_demo.c ****                 default: led1_setGreen(1); led1_setBlue(1); led1_setRed(1);
+ 962               	.LM176:
+ 963 0054 00C0      		rjmp .L86
+ 964               	.L99:
+ 192:lichter_demo.c ****                             break;
+ 966               	.LM177:
+ 967 0056 2A9A      		sbi 0x5,2
+ 968 0058 5D9A      		sbi 0xb,5
+ 969 005a 299A      		sbi 0x5,1
+ 970               	.L86:
+ 195:lichter_demo.c **** 
+ 972               	.LM178:
+ 973 005c 0E94 0000 		call led_clearAll
+ 974               	.L92:
+ 199:lichter_demo.c ****                 case  1: modus_1(error_team1, error_team2);
+ 976               	.LM179:
+ 977 0060 1230      		cpi r17,lo8(2)
+ 978 0062 01F0      		breq .L88
+ 979 0064 1330      		cpi r17,lo8(3)
+ 980 0066 01F0      		breq .L89
+ 981 0068 1130      		cpi r17,lo8(1)
+ 982 006a 01F4      		brne .L100
+ 983               	.L90:
+ 200:lichter_demo.c ****                             break;
+ 985               	.LM180:
+ 986 006c BE01      		movw r22,r28
+ 987 006e 6F5F      		subi r22,-1
+ 988 0070 7F4F      		sbci r23,-1
+ 989 0072 CE01      		movw r24,r28
+ 990 0074 0296      		adiw r24,2
+ 991 0076 0E94 0000 		call modus_1
+ 992 007a 00C0      		rjmp .L101
+ 993               	.L88:
+ 202:lichter_demo.c ****                             break;
+ 995               	.LM181:
+ 996 007c 0E94 0000 		call modus_2
+ 203:lichter_demo.c ****                 case  3: modus_3(error_team1, error_team2);
+ 998               	.LM182:
+ 999 0080 00C0      		rjmp .L79
+ 1000               	.L89:
+ 204:lichter_demo.c ****                             break;
+ 1002               	.LM183:
+ 1003 0082 BE01      		movw r22,r28
+ 1004 0084 6F5F      		subi r22,-1
+ 1005 0086 7F4F      		sbci r23,-1
+ 1006 0088 CE01      		movw r24,r28
+ 1007 008a 0296      		adiw r24,2
+ 1008 008c 0E94 0000 		call modus_3
+ 205:lichter_demo.c ****                 default: led1_setGreen(1); led1_setBlue(1); led1_setRed(1);
+ 1010               	.LM184:
+ 1011 0090 00C0      		rjmp .L79
+ 1012               	.L100:
+ 206:lichter_demo.c ****                             break;
+ 1014               	.LM185:
+ 1015 0092 2A9A      		sbi 0x5,2
+ 1016 0094 5D9A      		sbi 0xb,5
+ 1017 0096 299A      		sbi 0x5,1
+ 207:lichter_demo.c ****             }
+ 1019               	.LM186:
+ 1020 0098 00C0      		rjmp .L79
+ 1021               	.L81:
+ 181:lichter_demo.c ****             error_count_team1 = 0;
+ 1023               	.LM187:
+ 1024 009a 0E94 0000 		call led_clearAll
+ 182:lichter_demo.c ****             error_count_team2 = 0;
+ 1026               	.LM188:
+ 1027 009e 1A82      		std Y+2,__zero_reg__
+ 183:lichter_demo.c **** 
+ 1029               	.LM189:
+ 1030 00a0 1982      		std Y+1,__zero_reg__
+ 1031 00a2 00C0      		rjmp .L85
+ 1032               	.L80:
+ 175:lichter_demo.c ****             modus=1;
+ 1034               	.LM190:
+ 1035 00a4 1430      		cpi r17,lo8(4)
+ 1036 00a6 00F4      		brsh .L90
+ 1037 00a8 00C0      		rjmp .L92
+ 1044               	.Lscope10:
+ 1045               		.comm	buttons,9,1
+ 1047               		.text
+ 1049               	.Letext0:
+ 1050               		.ident	"GCC: (GNU) 4.9.2"
+ 1051               	.global __do_clear_bss
+DEFINED SYMBOLS
+                            *ABS*:00000000 lichter_demo.c
+     /tmp/ccayNS09.s:2      *ABS*:0000003e __SP_H__
+     /tmp/ccayNS09.s:3      *ABS*:0000003d __SP_L__
+     /tmp/ccayNS09.s:4      *ABS*:0000003f __SREG__
+     /tmp/ccayNS09.s:5      *ABS*:00000000 __tmp_reg__
+     /tmp/ccayNS09.s:6      *ABS*:00000001 __zero_reg__
+     /tmp/ccayNS09.s:114    .text:00000000 init_hardware
+                            *COM*:00000009 buttons
+     /tmp/ccayNS09.s:157    .text:0000001c led_clearAll
+     /tmp/ccayNS09.s:195    .text:0000002e get_buttonState
+     /tmp/ccayNS09.s:439    .text:0000015c modus_1
+     /tmp/ccayNS09.s:531    .text:000001a6 modus_2
+     /tmp/ccayNS09.s:573    .text:000001c0 modus_3
+     /tmp/ccayNS09.s:653    .text:00000202 blink_multicolored_alternating
+     /tmp/ccayNS09.s:738    .text:00000262 blink_green_alternating
+     /tmp/ccayNS09.s:814    .text:000002b2 blink_multicolored
+     /tmp/ccayNS09.s:877    .text.startup:00000000 main
+
+UNDEFINED SYMBOLS
+delay_ms
+__do_clear_bss
