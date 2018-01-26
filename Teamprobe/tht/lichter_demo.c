@@ -3,9 +3,9 @@
 * robosax/lichter_demo.c                                                      *
 * ======================                                                      *
 *                                                                             *
-* Version: ?.?.?                                                             *
-* Date   : 23.01.18                                                           *
-* Author : Peter Weissig, Tina Lenk , Frasnz                                   *
+* Version: ?.?.?                                                              *
+* Date   : 26.01.18                                                           *
+* Author : Peter Weissig, Tina Lenk                                           *
 *                                                                             *
 ******************************************************************************/
 
