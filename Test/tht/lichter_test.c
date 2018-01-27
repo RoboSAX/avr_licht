@@ -1,5 +1,5 @@
 /******************************************************************************
-* tht/test/lichter_test.c                                                     *
+* Test/tht/lichter_test.c                                                     *
 * =======================                                                     *
 *                                                                             *
 * Version: 1.0.0                                                              *
@@ -13,7 +13,7 @@
 #include <avr/io.h>
 #include <inttypes.h>
 
-#include "lichter_test.h"
+#include "lichter.h"
 
 
 //**************************<Macros>*******************************************
