@@ -4,5 +4,5 @@ tmp
 data
 
 # robolib - files
-*.h
+lichter.h
 out.hex

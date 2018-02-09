@@ -4,7 +4,7 @@
 * ======================                                                      *
 *                                                                             *
 * Version: ?.?.?                                                              *
-* Date   : 26.01.18                                                           *
+* Date   : 08.02.18                                                           *
 * Author : Peter Weissig, Tina Lenk                                           *
 *                                                                             *
 ******************************************************************************/
@@ -14,7 +14,7 @@
 #include <avr/io.h>
 #include <inttypes.h>
 
-#include "lichter_demo.h"
+#include "lichter.h"
 
 //**************************<Macros>*******************************************
 #define led1_setRed(x)   ( x ? (PORTB|= _BV(1)) : (PORTB&= ~_BV(1)))
