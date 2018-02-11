@@ -2,8 +2,8 @@
 * Teamprobe/tht/lichter_intern.c                                              *
 * ==============================                                              *
 *                                                                             *
-* Version: 1.0.1                                                              *
-* Date   : 08.02.18                                                           *
+* Version: 1.0.2                                                              *
+* Date   : 09.02.18                                                           *
 * Author : Peter Weissig, Tina Lenk, Leander Herr                             *
 *                                                                             *
 ******************************************************************************/
